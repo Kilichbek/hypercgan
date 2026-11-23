@@ -1,0 +1,50 @@
+# HyperCGAN generator config used for all experiments in the paper (CUB, MS-COCO, ArtEmis at 256x256).
+# Training hyper-parameters (batch size, losses, augmentation) are command-line options of train.py, see scripts/.
+# Note: interpolations such as ${coords} are relative to the `generator` section.
+
+generator:
+  fp32: true                  # Train the generator in full precision.
+  upsampling_mode: bilinear   # Upsampling between blocks.
+  use_noise: false            # No per-pixel noise inputs.
+  num_extra_convs: {"128": 1, "256": 1} # Additional layers at these resolutions.
+
+  # The first blocks of the INR operate on a 32x32 coordinate grid.
+  input:
+    type: "coords"
+    resolution: 32
+    coord_fuser_cfg: ${coords}
+
+  # Fourier coordinate embeddings, concatenated to the features at every resolution (INR-GAN).
+  coords:
+    enabled: true
+    per_resolution: true
+    kernel_size: 1            # All synthesis layers are 1x1, i.e. the generator is a pixel-wise MLP (INR).
+    coord_dim: 2
+    fallback: false
+    use_full_cache: false
+    low_res_cfg:
+      log_emb_size: 64
+      const_emb_size: 0
+      use_cosine: true
+      use_diagonal: true
+    medium_res_cfg:
+      log_emb_size: 32
+      random_emb_size: 32
+      const_emb_size: 0
+      use_cosine: true
+    res_configs:
+      "4": ${coords.low_res_cfg}
+      "8": ${coords.low_res_cfg}
+      "16": ${coords.low_res_cfg}
+      "32": ${coords.low_res_cfg}
+      "64": ${coords.low_res_cfg}
+      "128": ${coords.medium_res_cfg}
+      "256": ${coords.medium_res_cfg}
+
+  # Weight modulation of every synthesis layer.
+  fmm:
+    enabled: true
+    rank: 10                  # Rank of the factorized multiplicative modulation predicted from the latent w.
+    activation: demod         # Normalization of the FMM-modulated weights.
+    word_activation: lrelu    # Activation of the word-level attention modulation (training/tensor_mod.py).
+    instance_norm: false

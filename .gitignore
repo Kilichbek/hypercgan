@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.DS_Store
+
+# Data, runs and outputs
+datasets/
+training-runs/
+out/
+*.pkl
+*.pt
+*.zip
